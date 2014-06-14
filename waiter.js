@@ -1,18 +1,19 @@
 var http = require('http');
-var fs = require('fs');
+var fs   = require('fs');
 var path = require('path');
 var port = 34987;
-var KEY = fs.readFileSync(path.join(__dirname, 'key')).toString().trim();
+var KEY  = fs.readFileSync(path.join(__dirname, 'key')).toString().trim();
 
 var server = http.createServer(function(req, res) {
-  var url = req.url;
-  var method = req.method;
+  var url     = req.url;
+  var isGET   = req.method === 'GET';
+  var isPOST  = req.method === 'POST';
   var headers = req.headers;
-  var ipaddr = req.headers['x-forwarded-for']
-            || req.connection.remoteAddress
-            || req.socket.remoteAddress;
+  var ipaddr  = req.headers['x-forwarded-for']
+             || req.connection.remoteAddress
+             || req.socket.remoteAddress;
 
-  if (method === 'GET' && url === '/waiter') {
+  if (isGET && url === '/waiter') {
     if (IsIPAddrInWhiteList(ipaddr)) {
       try {
         var enabled = path.join(__dirname, 'enabled.bat');
@@ -23,7 +24,7 @@ var server = http.createServer(function(req, res) {
     return NotFound();
   }
 
-  if (method === 'POST' && url === '/screenshot') {
+  if (isPOST && url === '/screenshot') {
     if (!headers || !headers.key || headers.key !== KEY) return NotFound();
 
     var pubpath;
