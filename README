@@ -1,0 +1,66 @@
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= waiter =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+waiter.exe
+
+Get and execute commands and take screenshots for a period of time.
+Report bugs to caiguanhao@gmail.com.
+
+Usage: waiter [OPTION]
+
+Option:
+  -h, --help               Show this help and exit
+  -u, --url        <url>   URL to query for commands
+  -p, --period     <secs>  Wait n seconds after each query
+  -s, --screenshot <url>   Screenshot API address.
+                           Use "-" to disable.
+
+Defaults:
+  --url        http://waiter.cgh.io/waiter
+  --period     10
+  --screenshot http://waiter.cgh.io/screenshot
+
+API key:
+  beGEeEWw60X7An0UBUBh ... 64 characters
+
+
+
+Generate a new random key:
+    $ ./generate-key.sh
+
+Run server:
+    $ screen -dmS waiter -t waiter ./forever.sh
+
+Enable new BAT script:
+    $ ./enable.sh
+
+If you want this BAT script to run on some machines only,
+put their IP addresses on each line in the ./whitelist file.
+Remove the file or make the file empty will ban all clients.
+Put 'all' on any line will allow all clients.
+
+Make waiter.exe on Windows (make sure you have installed AutoIt v3):
+    $ make
+
+
+
+The MIT License (MIT)
+
+Copyright (c) 2014 Cai Guanhao (Choi Goon-ho)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
