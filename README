@@ -11,8 +11,8 @@ Option:
   -h, --help               Show this help and exit
   -u, --url        <url>   URL to query for commands
   -p, --period     <secs>  Wait n seconds after each query
-  -s, --screenshot <url>   Screenshot API address.
-                           Use "-" to disable.
+  -s, --screenshot <url>   Screenshot API address
+                           Use "-" as URL to disable
 
 Defaults:
   --url        http://waiter.cgh.io/waiter

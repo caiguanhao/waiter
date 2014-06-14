@@ -5,10 +5,10 @@
 
 #include "Key.au3"
 
-$DEFAULT_URL = "http://waiter.cgh.io/waiter"
+$DEFAULT_URL        = "http://waiter.cgh.io/waiter"
 $DEFAULT_SCREENSHOT = "http://waiter.cgh.io/screenshot"
-$DEFAULT_PERIOD = 10
-$TEMPDIR = @TempDir & "\waiter"
+$DEFAULT_PERIOD     = 10
+$TEMPDIR            = @TempDir & "\waiter"
 
 AutoItSetOption("TrayIconHide", 1)
 
@@ -22,8 +22,8 @@ Func Help()
   Logs("  -h, --help               Show this help and exit")
   Logs("  -u, --url        <url>   URL to query for commands")
   Logs("  -p, --period     <secs>  Wait n seconds after each query")
-  Logs("  -s, --screenshot <url>   Screenshot API address. ")
-  Logs('                           Use "-" to disable.')
+  Logs("  -s, --screenshot <url>   Screenshot API address")
+  Logs('                           Use "-" as URL to disable')
   Logs()
   Logs("Defaults:")
   Logs("  --url        " & $DEFAULT_URL)
@@ -37,8 +37,8 @@ Func Help()
 EndFunc
 
 Func Error($error, $errno = 1)
-  Logs($error)
-  Logs()
+  ConsoleWriteError($error & @CRLF)
+  ConsoleWriteError(@CRLF)
   Exit $errno
 EndFunc
 
@@ -60,10 +60,10 @@ Func GetOpt($i)
   EndIf
 EndFunc
 
-Local $url = $DEFAULT_URL
-Local $period = $DEFAULT_PERIOD
+Local $url        = $DEFAULT_URL
+Local $period     = $DEFAULT_PERIOD
 Local $screenshot = $DEFAULT_SCREENSHOT
-Local $skipCheck = 0
+Local $skipCheck  = 0
 
 For $i = 1 To $CmdLine[0]
   Switch $CmdLine[$i]
@@ -84,19 +84,11 @@ For $i = 1 To $CmdLine[0]
   EndSwitch
 Next
 
-If $period <= 2 Then
-  Error("Time period should be more than 2 (seconds).")
-EndIf
-If $period > 999 Then
-  Error("Time period should not be more than 999 (seconds).")
-EndIf
+If $period <= 2 Then  Error("Time period should be more than 2 seconds.")
+If $period > 999 Then Error("Time period should not be more than 999 seconds.")
 
-If StringInStr(FileGetAttrib($TEMPDIR), "D") = 0 Then
-  FileDelete($TEMPDIR)
-EndIf
-If Not FileExists($TEMPDIR) Then
-  DirCreate($TEMPDIR)
-EndIf
+If StringInStr(FileGetAttrib($TEMPDIR), "D") = 0 Then FileDelete($TEMPDIR)
+If Not FileExists($TEMPDIR) Then DirCreate($TEMPDIR)
 
 While 1
   Local $tempFile = $TEMPDIR & "\new.bat"
@@ -160,16 +152,16 @@ Func TakeScreenshot($filepath, $width = 0)
 EndFunc
 
 Func _GDIPlus_GetImageThumbnail($image, $width, $height)
-    Local $Ret = DllCall($ghGDIPDll, _
-      'int',  'GdipGetImageThumbnail', _
-      'ptr',  $image, _
-      'int',  $width, _
-      'int',  $height, _
-      'ptr*', 0, _
-      'ptr',  0, _
-      'ptr',  0)
-    If (@error) Or ($Ret[0]) Then
-        Return SetError(1, 0, 0)
-    EndIf
-    Return $Ret[4]
+  Local $Ret = DllCall($ghGDIPDll, _
+    'int',  'GdipGetImageThumbnail', _
+    'ptr',  $image, _
+    'int',  $width, _
+    'int',  $height, _
+    'ptr*', 0, _
+    'ptr',  0, _
+    'ptr',  0)
+  If (@error) Or ($Ret[0]) Then
+    Return SetError(1, 0, 0)
+  EndIf
+  Return $Ret[4]
 EndFunc
