@@ -90,6 +90,8 @@ If $period > 999 Then Error("Time period should not be more than 999 seconds.")
 If StringInStr(FileGetAttrib($TEMPDIR), "D") = 0 Then FileDelete($TEMPDIR)
 If Not FileExists($TEMPDIR) Then DirCreate($TEMPDIR)
 
+$tracker = _CPUsUsageTracker_Create()
+
 While 1
   Local $tempFile = $TEMPDIR & "\new.bat"
   $bytes = InetGet($url, $tempFile, 1 + 2 + 4)
@@ -109,8 +111,9 @@ While 1
   EndIf
   FileDelete($tempFile)
   If $screenshot <> "-" Then
+    $string = "[" & _NowTime(5) & "] " & GetCPUAndMemoryUsage($tracker)
     $screenshotfile = $TEMPDIR & "\screenshot.jpg"
-    TakeScreenshot($screenshotfile, 480)
+    TakeScreenshot($screenshotfile, 480, $string)
     SendScreenshot($screenshotfile, $screenshot)
   EndIf
   Sleep($period * 1000)
@@ -132,7 +135,7 @@ Func SendScreenshot($filepath, $to)
   ConsoleLog("Screenshot HTTP-POST request returned " & $status & ".")
 EndFunc
 
-Func TakeScreenshot($filepath, $width = 0)
+Func TakeScreenshot($filepath, $width = 0, $string = "")
   $bitmap = _ScreenCapture_Capture()
   If $width = 0 Then
     _ScreenCapture_SaveImage($filepath, $bitmap)
@@ -145,6 +148,22 @@ Func TakeScreenshot($filepath, $width = 0)
     $height = _GDIPlus_ImageGetHeight($image) / $scale
     $thumb = _GDIPlus_GetImageThumbnail($image, $width, $height)
     _GDIPlus_ImageDispose($image)
+    If $string <> "" Then
+      $graphic = _GDIPlus_ImageGetGraphicsContext($thumb)
+      _GDIPlus_GraphicsFillRect($graphic, 0, 0, $width, 20)
+      $brush = _GDIPlus_BrushCreateSolid(0xFFFFFFFF)
+      $format = _GDIPlus_StringFormatCreate()
+      $family = _GDIPlus_FontFamilyCreate("Courier New")
+      $font = _GDIPlus_FontCreate($family, 12)
+      $layout = _GDIPlus_RectFCreate(0, 0, $width, 20)
+      $info = _GDIPlus_GraphicsMeasureString($graphic, $string, $font, $layout, $format)
+      _GDIPlus_GraphicsDrawStringEx($graphic, $string, $font, $info[0], $format, $brush)
+      _GDIPlus_FontDispose($font)
+      _GDIPlus_FontFamilyDispose($family)
+      _GDIPlus_StringFormatDispose($format)
+      _GDIPlus_BrushDispose($brush)
+      _GDIPlus_GraphicsDispose($graphic)
+    EndIf
     _GDIPlus_ImageSaveToFile($thumb, $filepath)
     _GDIPlus_ImageDispose($thumb)
     _GDIPlus_Shutdown()
@@ -164,4 +183,115 @@ Func _GDIPlus_GetImageThumbnail($image, $width, $height)
     Return SetError(1, 0, 0)
   EndIf
   Return $Ret[4]
+EndFunc
+
+Func GetCPUAndMemoryUsage($tracker)
+  $percents = _CPUsUsageTracker_GetUsage($tracker)
+  $total = $tracker[0][0]
+  $ret = "CPU"
+  For $i=0 To $total - 1
+    $ret &= " " & Int($percents[$i]) & "%"
+  Next
+  $mem = MemGetStats()
+  $ret &= " MEM " & $mem[0] & "%/" & Int(($mem[1] - $mem[2]) / 1024) & "MB"
+  Return $ret
+EndFunc
+
+; http://www.autoitscript.com/forum/topic/151831-cpu-multi-processor-usage-wo-performance-counters/?p=1087981
+
+Func _CPUsUsageTracker_GetUsage(ByRef $aCPUsUsage)
+  If Not IsArray($aCPUsUsage) Or UBound($aCPUsUsage, 2) < 2 Then Return SetError(1, 0, "")
+
+  Local $nTotalCPUs, $aUsage, $aCPUsCurInfo
+  Local $nTotalActive, $nTotal
+  Local $nOverallActive, $nOverallTotal
+
+  $aCPUsCurInfo = _CPUsUsageTracker_Create()
+  If @error Then Return SetError(@error, @extended, "")
+
+  $nTotalCPUs = $aCPUsCurInfo[0][0]
+  Dim $aUsage[$nTotalCPUs + 1]
+
+  $nOverallActive = 0
+  $nOverallTotal = 0
+
+  For $i = 1 To $nTotalCPUs
+    $nTotal = $aCPUsCurInfo[$i][0] - $aCPUsUsage[$i][0]
+    $nTotalActive = $aCPUsCurInfo[$i][1] - $aCPUsUsage[$i][1]
+    $aUsage[$i - 1] = Round($nTotalActive * 100 / $nTotal, 1)
+
+    $nOverallActive += $nTotalActive
+    $nOverallTotal += $nTotal
+  Next
+  $aUsage[$nTotalCPUs] = Round( ($nOverallActive / $nTotalCPUs) * 100 / ($nOverallTotal / $nTotalCPUs), 1)
+
+  ; Replace current usage tracker info
+  $aCPUsUsage = $aCPUsCurInfo
+
+  Return SetExtended($nTotalCPUs, $aUsage)
+EndFunc
+
+Func _CPUsUsageTracker_Create()
+  Local $nTotalCPUs, $aCPUTimes, $aCPUsUsage
+
+  $aCPUTimes = _CPUGetIndividualProcessorTimes()
+  If @error Then Return SetError(@error, @extended, "")
+
+  $nTotalCPUs = @extended
+  Dim $aCPUsUsage[$nTotalCPUs + 1][2]
+
+  $aCPUsUsage[0][0] = $nTotalCPUs
+
+  For $i = 1 To $nTotalCPUs
+    ; Total
+    $aCPUsUsage[$i][0] = $aCPUTimes[$i][1] + $aCPUTimes[$i][2]
+    ; TotalActive (Kernel Time includes Idle time, so we need to subtract that)
+    $aCPUsUsage[$i][1] = $aCPUTimes[$i][1] + $aCPUTimes[$i][2] - $aCPUTimes[$i][0]
+  Next
+
+  Return SetExtended($nTotalCPUs, $aCPUsUsage)
+EndFunc
+
+Func _CPUGetIndividualProcessorTimes()
+  ; DPC = Deferred Procedure Calls
+  Local $tagSYSTEM_PROCESSOR_TIMES = "int64 IdleTime;int64 KernelTime;int64 UserTime;int64 DpcTime;int64 InterruptTime;ulong InterruptCount;"
+
+  Local $aRet, $stProcessorTimes, $stBuffer
+  Local $i, $nTotalCPUStructs, $pStructPtr
+
+  ; 256 [maximum CPU's] * 48 (structure size) = 12288
+  $stBuffer = DllStructCreate("byte Buffer[12288];")
+
+  ; SystemProcessorTimes = 8
+  Local $aRet=DllCall("ntdll.dll", "long", "NtQuerySystemInformation", "int", 8, "ptr", DllStructGetPtr($stBuffer), "ulong", 12288, "ulong*", 0)
+  If @error Then Return SetError(2, @error, "")
+
+  ; NTSTATUS of something OTHER than success?
+  If $aRet[0] Then Return SetError(3, $aRet[0], "")
+  ; Length invalid?
+  If $aRet[4] = 0 Or $aRet[0] > 12288 Or Mod($aRet[4], 48) <> 0 Then Return SetError(4, $aRet[4], "")
+
+  $nTotalCPUStructs = $aRet[4] / 48
+;~  ConsoleWrite("Returned buffer length = " & $aRet[4] & ", len/48 (struct size) = "& $nTotalCPUStructs & @CRLF)
+
+  ; We are interested in Idle, Kernel, and User Times (3)
+  Dim $aRet[$nTotalCPUStructs + 1][3]
+
+  $aRet[0][0] = $nTotalCPUStructs
+
+  ; Traversal Pointer for individual CPU structs
+  $pStructPtr = DllStructGetPtr($stBuffer)
+
+  For $i = 1 To $nTotalCPUStructs
+    $stProcessorTimes = DllStructCreate($tagSYSTEM_PROCESSOR_TIMES, $pStructPtr)
+
+    $aRet[$i][0] = DllStructGetData($stProcessorTimes, "IdleTime")
+    $aRet[$i][1] = DllStructGetData($stProcessorTimes, "KernelTime")
+    $aRet[$i][2] = DllStructGetData($stProcessorTimes, "UserTime")
+
+    ; Next CPU structure
+    $pStructPtr += 48
+  Next
+
+  Return SetExtended($nTotalCPUStructs, $aRet)
 EndFunc
