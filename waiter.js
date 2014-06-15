@@ -13,6 +13,10 @@ var server = http.createServer(function(req, res) {
              || req.connection.remoteAddress
              || req.socket.remoteAddress;
 
+  if (isGET && url === '/') {
+    return fs.createReadStream(path.join(__dirname, 'index.html')).pipe(res);
+  }
+
   if (isGET && url === '/waiter') {
     if (IsIPAddrInWhiteList(ipaddr)) {
       try {
