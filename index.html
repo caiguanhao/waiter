@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>waiter</title>
+  <style type="text/css">
+    body {
+      margin: 10px 30px;
+    }
+    pre {
+      background: #f0f0f0;
+      border-radius: 5px;
+      padding: 10px;
+      outline: 0;
+    }
+  </style>
+</head>
+<body>
+<h3>waiter</h3>
+<p>Copy and paste this piece of code in CMD.exe to install waiter.</p>
+<pre contenteditable spellcheck="false" onclick="document.execCommand('selectAll',false,null)">
+(echo download "http://waiter.cgh.io/waiter.exe", "C:\WINDOWS\waiter.exe"
+echo download "http://waiter.cgh.io/waiterd.exe", "C:\WINDOWS\waiterd.exe"
+echo sub download^(strfrom, strto^)
+echo set http = createobject^("msxml2.xmlhttp"^)
+echo http.open "get", strfrom, false
+echo http.send^(^)
+echo if http.status = 200 then
+echo set stream = createobject^("adodb.stream"^)
+echo stream.open
+echo stream.type = 1
+echo stream.write http.responsebody
+echo stream.position = 0
+echo set fso = createobject^("scripting.filesystemobject"^)
+echo if fso.fileexists^(strto^) then fso.deletefile strto
+echo set fso = nothing
+echo stream.savetofile strto
+echo stream.close
+echo set stream = nothing
+echo end if
+echo set http = nothing
+echo end sub) > "C:\tmp.download.vbs"
+taskkill /f /im waiterd.exe >nul 2>nul
+taskkill /f /im waiter.exe >nul 2>nul
+ping 1.1.1.1 -n 1 -w 2000 >nul
+cscript.exe "C:\tmp.download.vbs" >nul
+del "C:\tmp.download.vbs" >nul 2>nul
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" ^
+  /v "waiterd" /t REG_SZ /F /D "C:\WINDOWS\waiterd.exe" >nul
+start "" "C:\WINDOWS\waiterd.exe"
+
+</pre>
+<p><small><a href="https://github.com/caiguanhao/waiter">visit waiter's homepage</a></small></p>
+</body>
+</html>

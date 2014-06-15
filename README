@@ -43,6 +43,35 @@ Make waiter.exe on Windows (make sure you have installed AutoIt v3):
 
 
 
+Nginx configulation example:
+
+upstream WaiterApp34987 {
+  server 127.0.0.1:34987;
+}
+
+server {
+  server_name waiter.cgh.io;
+  listen 80;
+  client_max_body_size 1m;
+  keepalive_timeout 5;
+  root /srv/waiter/public;
+  gzip_static on;
+  error_page 500 502 503 504 /500.html;
+  location = /500.html {
+    root /srv/waiter/public;
+  }
+  try_files $uri/index.html $uri.html $uri @app;
+  location @app {
+    proxy_intercept_errors on;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+    proxy_pass http://WaiterApp34987;
+  }
+}
+
+
+
 The MIT License (MIT)
 
 Copyright (c) 2014 Cai Guanhao (Choi Goon-ho)
