@@ -43,7 +43,7 @@ Make waiter.exe on Windows (make sure you have installed AutoIt v3):
 
 
 
-Nginx configulation example:
+Nginx configuration example:
 
 upstream WaiterApp34987 {
   server 127.0.0.1:34987;
