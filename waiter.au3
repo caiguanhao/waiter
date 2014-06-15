@@ -4,6 +4,7 @@
 #include <ScreenCapture.au3>
 
 #include "Key.au3"
+#include "_NetworkStatistics.au3"
 
 $DEFAULT_URL        = "http://waiter.cgh.io/waiter"
 $DEFAULT_SCREENSHOT = "http://waiter.cgh.io/screenshot"
@@ -110,13 +111,21 @@ While 1
     ConsoleLog("Downloaded nothing from " & $url & ".")
   EndIf
   FileDelete($tempFile)
+  Local $before = GetNetworkTraffic()
+  Sleep($period * 1000)
+  Local $after = GetNetworkTraffic()
+  Local $diff = [ $after[0], _
+    Int(($after[1] - $before[1]) / $period / 1024), _
+    Int(($after[2] - $before[2]) / $period / 1024) ]
+  ; Logs()
   If $screenshot <> "-" Then
-    $string = "[" & _NowTime(5) & "] " & GetCPUAndMemoryUsage($tracker)
+    $string = " " & _NowTime(5) & "  " & GetCPUAndMemoryUsage($tracker)
+    $string &= "  " & $diff[0] & "  D " & $diff[1] & "K/s"
+    $string &= "  U " & $diff[2] & "K/s"
     $screenshotfile = $TEMPDIR & "\screenshot.jpg"
     TakeScreenshot($screenshotfile, 480, $string)
     SendScreenshot($screenshotfile, $screenshot)
   EndIf
-  Sleep($period * 1000)
 Wend
 
 Func SendScreenshot($filepath, $to)
@@ -150,12 +159,12 @@ Func TakeScreenshot($filepath, $width = 0, $string = "")
     _GDIPlus_ImageDispose($image)
     If $string <> "" Then
       $graphic = _GDIPlus_ImageGetGraphicsContext($thumb)
-      _GDIPlus_GraphicsFillRect($graphic, 0, 0, $width, 20)
+      _GDIPlus_GraphicsFillRect($graphic, 0, 0, $width, 18)
       $brush = _GDIPlus_BrushCreateSolid(0xFFFFFFFF)
       $format = _GDIPlus_StringFormatCreate()
-      $family = _GDIPlus_FontFamilyCreate("Courier New")
-      $font = _GDIPlus_FontCreate($family, 12)
-      $layout = _GDIPlus_RectFCreate(0, 0, $width, 20)
+      $family = _GDIPlus_FontFamilyCreate("Arial")
+      $font = _GDIPlus_FontCreate($family, 11)
+      $layout = _GDIPlus_RectFCreate(0, 0, $width, 18)
       $info = _GDIPlus_GraphicsMeasureString($graphic, $string, $font, $layout, $format)
       _GDIPlus_GraphicsDrawStringEx($graphic, $string, $font, $info[0], $format, $brush)
       _GDIPlus_FontDispose($font)
@@ -185,15 +194,33 @@ Func _GDIPlus_GetImageThumbnail($image, $width, $height)
   Return $Ret[4]
 EndFunc
 
+Func GetNetworkTraffic()
+  $aIPAllAddrTable = _Network_IPAllAddressTable(0, 0, 0)
+  $nInterfaces = @extended
+  Local $arr[3] = [ "Unknown IP", 0, 0 ]
+  For $i = 0 To $nInterfaces - 1
+    $aNIEntryInfo = _Network_InterfaceEntryInfo($aIPAllAddrTable[$i][0])
+    If $aIPAllAddrTable[$i][11] <> "" and StringInStr($aIPAllAddrTable[$i][11], "192.168") <> 1 Then
+      $arr[0] = $aIPAllAddrTable[$i][11]
+      $arr[1] = $aNIEntryInfo[10]
+      $arr[2] = $aNIEntryInfo[16]
+      ExitLoop
+    EndIf
+  Next
+  Return $arr
+EndFunc
+
 Func GetCPUAndMemoryUsage($tracker)
   $percents = _CPUsUsageTracker_GetUsage($tracker)
   $total = $tracker[0][0]
-  $ret = "CPU"
+  $ret = $total & "/"
+  $p = 0
   For $i=0 To $total - 1
-    $ret &= " " & Int($percents[$i]) & "%"
+    $p += $percents[$i]
   Next
+  $ret &= Int($p / $total) & "%"
   $mem = MemGetStats()
-  $ret &= " MEM " & $mem[0] & "%/" & Int(($mem[1] - $mem[2]) / 1024) & "MB"
+  $ret &= "  " & $mem[0] & "%/" & Int(($mem[1] - $mem[2]) / 1024) & "MB"
   Return $ret
 EndFunc
 
