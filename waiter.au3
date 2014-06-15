@@ -139,6 +139,7 @@ Func SendScreenshot($filepath, $to)
   $file = FileOpen($filepath, 16)
   $data = FileRead($file)
   $http.Send($data)
+  FileClose($file)
   $status = $http.Status
   If $status == "" Then
     $status = "nothing"
