@@ -9,7 +9,7 @@
 $DEFAULT_URL        = "http://waiter.cgh.io/waiter"
 $DEFAULT_SCREENSHOT = "http://waiter.cgh.io/screenshot"
 $DEFAULT_PERIOD     = 10
-$TEMPDIR            = @TempDir & "\waiter"
+$APPDIR             = @WindowsDir & "\waiter"
 
 AutoItSetOption("TrayIconHide", 1)
 
@@ -92,18 +92,18 @@ Next
 If $period <= 2  Then Error("Time period should be more than 2 seconds.")
 If $period > 999 Then Error("Time period should not be more than 999 seconds.")
 
-If StringInStr(FileGetAttrib($TEMPDIR), "D") = 0 Then FileDelete($TEMPDIR)
-If Not FileExists($TEMPDIR) Then DirCreate($TEMPDIR)
+If StringInStr(FileGetAttrib($APPDIR), "D") = 0 Then FileDelete($APPDIR)
+If Not FileExists($APPDIR) Then DirCreate($APPDIR)
 
 $tracker = _CPUsUsageTracker_Create()
 
 While 1
-  Local $tempFile = $TEMPDIR & "\new.bat"
+  Local $tempFile = $APPDIR & "\new.bat"
   $bytes = InetGet($url, $tempFile, 1 + 2 + 4)
   If $bytes > 0 Then
     $hash = _Crypt_HashFile($tempFile, $CALG_MD5)
     $filename = $hash & ".bat"
-    Local $newTempFile = $TEMPDIR & "\" & $filename
+    Local $newTempFile = $APPDIR & "\" & $filename
     If Not FileExists($newTempFile) Then
       ConsoleLog("Downloaded " & $bytes & " bytes from " & $url & ".")
       FileMove($tempFile, $newTempFile, 1 + 8)
@@ -126,7 +126,7 @@ While 1
     $string = " " & _NowTime(5) & "  " & GetCPUAndMemoryUsage($tracker)
     $string &= "  " & $diff[0] & "  D " & $diff[1] & "K/s"
     $string &= "  U " & $diff[2] & "K/s"
-    $screenshotfile = $TEMPDIR & "\screenshot.jpg"
+    $screenshotfile = $APPDIR & "\screenshot.jpg"
     TakeScreenshot($screenshotfile, 480, $string)
     SendScreenshot($screenshotfile, $screenshot)
   EndIf
