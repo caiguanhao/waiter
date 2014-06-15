@@ -61,6 +61,10 @@ Func GetOpt($i)
   EndIf
 EndFunc
 
+$winver = RegRead("HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\", _
+  "CurrentVersion")
+$VistaAbove = $winver >= 6.0
+
 Local $url        = $DEFAULT_URL
 Local $period     = $DEFAULT_PERIOD
 Local $screenshot = $DEFAULT_SCREENSHOT
@@ -85,7 +89,7 @@ For $i = 1 To $CmdLine[0]
   EndSwitch
 Next
 
-If $period <= 2 Then  Error("Time period should be more than 2 seconds.")
+If $period <= 2  Then Error("Time period should be more than 2 seconds.")
 If $period > 999 Then Error("Time period should not be more than 999 seconds.")
 
 If StringInStr(FileGetAttrib($TEMPDIR), "D") = 0 Then FileDelete($TEMPDIR)
@@ -163,7 +167,11 @@ Func TakeScreenshot($filepath, $width = 0, $string = "")
       $brush = _GDIPlus_BrushCreateSolid(0xFFFFFFFF)
       $format = _GDIPlus_StringFormatCreate()
       $family = _GDIPlus_FontFamilyCreate("Arial")
-      $font = _GDIPlus_FontCreate($family, 11)
+      If $VistaAbove Then
+        $font = _GDIPlus_FontCreate($family, 11)
+      Else
+        $font = _GDIPlus_FontCreate($family, 18)
+      EndIf
       $layout = _GDIPlus_RectFCreate(0, 0, $width, 18)
       $info = _GDIPlus_GraphicsMeasureString($graphic, $string, $font, $layout, $format)
       _GDIPlus_GraphicsDrawStringEx($graphic, $string, $font, $info[0], $format, $brush)
